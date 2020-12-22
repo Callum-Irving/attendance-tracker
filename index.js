@@ -27,6 +27,7 @@ const users = db.get('users');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
+// Express middleware to detect if user has logged in with google
 const googleLoginReader = async (req, res, next) => {
 	const code = req.query.code;
 	if (code) {
