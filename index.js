@@ -13,19 +13,13 @@ function createConnection() {
 		process.env.GOOGLE_REDIRECT_URL
 	);
 }
-// const oauth = createConnection();
-// Code to generate the google oauth2 url:
-// const googleUrl = oauth.generateAuthUrl({
-// scope: 'https://www.googleapis.com/auth/userinfo.email',
-// });
-// console.log(googleUrl);
-// res.redirect(googleUrl);
 
 const app = express();
 const port = process.env.PORT || 5000;
 const db = monk(process.env.MONGODB_URL);
 const users = db.get('users');
 
+// This should probably be stored in a database somehow
 let attendanceOpen = false;
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -36,7 +30,11 @@ app.use(express.static('client/dist'));
 app.get('/login', (req, res) => {
 	// Redirect to generated google url
 	if (attendanceOpen) {
-		res.redirect(process.env.GOOGLE_OAUTH_URL);
+		const OAuth2Client = createConnection();
+		const googleUrl = OAuth2Client.generateAuthUrl({
+			scope: 'https://www.googleapis.com/auth/userinfo.email',
+		});
+		res.redirect(googleUrl);
 	} else {
 		res.redirect('/?success=false');
 	}
