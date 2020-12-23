@@ -1,102 +1,102 @@
 const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
-const monk = require('monk');
-const { google } = require('googleapis');
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 dotenv.config();
 
-function createConnection() {
-	return new google.auth.OAuth2(
-		process.env.GOOGLE_CLIENT_ID,
-		process.env.GOOGLE_CLIENT_SECRET,
-		process.env.GOOGLE_REDIRECT_URL
-	);
-}
-
 const app = express();
 const port = process.env.PORT || 5000;
-const db = monk(process.env.MONGODB_URL);
-const users = db.get('users');
 
-// This should probably be stored in a database somehow
 let attendanceOpen = false;
+
+// Start connection with Mongoose
+mongoose.connect(process.env.MONGODB_URL, {
+	useNewUrlParser: true,
+	useUnifiedTopology: true,
+});
+
+// User model for storing user information in MongoDB database
+const user = mongoose.model('user', {
+	name: String,
+	email: String,
+	attended: Boolean,
+});
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.use(express.static('client/dist'));
 
-app.get('/login', (req, res) => {
-	// Redirect to generated google url
-	if (attendanceOpen) {
-		const OAuth2Client = createConnection();
-		const googleUrl = OAuth2Client.generateAuthUrl({
-			scope: 'https://www.googleapis.com/auth/userinfo.email',
-		});
-		res.redirect(googleUrl);
-	} else {
-		res.redirect('/?success=false');
-	}
+// Google OAuth
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser(function (user, done) {
+	done(null, user);
+});
+passport.deserializeUser(function (user, done) {
+	done(null, user);
 });
 
-app.get('/oauthcallback', async (req, res) => {
-	const code = req.query.code;
-	if (code) {
-		const OAuth2Client = createConnection();
-		const { tokens } = await OAuth2Client.getToken(code);
-		OAuth2Client.setCredentials(tokens);
-		google
-			.oauth2('v2')
-			.userinfo.v2.me.get(
-				{ auth: OAuth2Client },
-				async (err, profile) => {
-					if (err) {
-						res.redirect('/?success=false');
-					} else {
-						if (!attendanceOpen) {
-							res.redirect('/?success=false');
-						} else {
-							const userExists = await users.findOne({
-								name: profile.data.name,
-							});
-							if (userExists) {
-								// Log user
-								users
-									.update(userExists, {
-										$set: { attended: true },
-									})
-									.then((success) => {
-										res.redirect('/?success=true');
-									})
-									.catch((err) => {
-										console.log(err);
-										res.redirect('/?success=true');
-									});
-							} else {
-								// Create user
-								users
-									.insert({
-										name: profile.data.name,
-										email: profile.data.email,
-										attended: true,
-									})
-									.then((success) => {
-										res.redirect('/?success=true');
-									})
-									.catch((err) => {
-										console.log(err);
-										res.redirect('/?success=true');
-									});
-							}
-						}
-					}
+passport.use(
+	new GoogleStrategy(
+		{
+			clientID: process.env.GOOGLE_CLIENT_ID,
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+			callbackURL: process.env.GOOGLE_REDIRECT_URL,
+		},
+		function (accessToken, refreshToken, profile, done) {
+			let userProfile = profile;
+			return done(null, userProfile);
+		}
+	)
+);
+
+const attendanceOpenCheck = (req, res, next) => {
+	if (!attendanceOpen) return res.redirect('/?success=false');
+	next();
+};
+app.get(
+	'/login',
+	attendanceOpenCheck,
+	passport.authenticate('google', { scope: 'email' })
+);
+
+app.get(
+	'/oauthcallback',
+	passport.authenticate('google', { failureRedirect: '/error' }),
+	async (req, res) => {
+		const userProfile = req.user._json;
+		const existingUser = await user.findOne({
+			name: userProfile.name,
+		});
+		if (existingUser) {
+			// Log user
+			await user.updateOne(existingUser, {
+				attended: true,
+			});
+			return res.redirect('/?success=true');
+		} else {
+			// Create user
+			const newUser = new user({
+				name: userProfile.name,
+				email: userProfile.email,
+				attended: true,
+			});
+			newUser.save((err, success) => {
+				if (err) {
+					console.error(err);
+					return res.redirect('/?success=false');
 				}
-			);
-	} else {
-		res.redirect('/?success=false');
+				return res.redirect('/?success=true');
+			});
+		}
 	}
-});
+);
 
 app.get('/*', (req, res) => {
 	res.redirect('/');
@@ -123,7 +123,7 @@ app.post('/api/getuserdata', async (req, res) => {
 		});
 	}
 	// Get user data from database
-	const allUsers = await users.find();
+	const allUsers = await user.find();
 	res.json({
 		success: true,
 		attendanceOpen: attendanceOpen,
@@ -144,9 +144,9 @@ app.post('/api/resetuserattendance', async (req, res) => {
 	if (req.body.password != process.env.ADMIN_PASSWORD) {
 		res.json({ success: false, errorMsg: 'Error: Incorrect password' });
 	} else {
-		const allUsers = await users.find();
-		allUsers.forEach(async (user) => {
-			users.update(user, { $set: { attended: false } });
+		const allUsers = await user.find();
+		allUsers.forEach(async (userProfile) => {
+			await user.updateOne(userProfile, { attended: false });
 		});
 		res.json({ success: true });
 	}
