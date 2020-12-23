@@ -3,8 +3,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const monk = require('monk');
 const { google } = require('googleapis');
-const dotenv = require('dotenv');
-dotenv.config();
+// const dotenv = require('dotenv');
+// dotenv.config();
 
 function createConnection() {
 	return new google.auth.OAuth2(
@@ -102,7 +102,7 @@ app.post('/login', (req, res) => {
 	}
 });
 
-app.post('/api/getuserdata', (req, res) => {
+app.post('/api/getuserdata', async (req, res) => {
 	if (req.body.password != process.env.ADMIN_PASSWORD) {
 		res.json({
 			success: false,
@@ -110,16 +110,11 @@ app.post('/api/getuserdata', (req, res) => {
 		});
 	}
 	// Get user data from database
+	const allUsers = await users.find();
 	res.json({
 		success: true,
 		attendanceOpen: attendanceOpen,
-		userList: [
-			{
-				name: 'Callum Irving',
-				email: 'irvic5144@wrdsb.ca',
-				attended: false,
-			},
-		],
+		userList: allUsers,
 	});
 });
 
