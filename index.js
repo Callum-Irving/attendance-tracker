@@ -45,9 +45,13 @@ app.get('/login', (req, res) => {
 app.get('/oauthcallback', async (req, res) => {
 	const code = req.query.code;
 	if (code) {
+		console.log('Creating connection');
 		const OAuth2Client = createConnection();
+		console.log('Connection created');
 		const { tokens } = await OAuth2Client.getToken(code);
+		console.log('Got tokens');
 		OAuth2Client.setCredentials(tokens);
+		console.log('Set credentials');
 		google
 			.oauth2('v2')
 			.userinfo.v2.me.get(
@@ -59,11 +63,13 @@ app.get('/oauthcallback', async (req, res) => {
 						if (!attendanceOpen) {
 							res.redirect('/?success=false');
 						} else {
+							console.log('Looking for user in database');
 							const userExists = await users.findOne({
 								name: profile.data.name,
 							});
 							if (userExists) {
 								// Log user
+								console.log('Updating user');
 								await users.update(userExists, {
 									$set: { attended: true },
 								});
