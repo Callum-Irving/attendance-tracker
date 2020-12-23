@@ -45,14 +45,9 @@ app.get('/login', (req, res) => {
 app.get('/oauthcallback', async (req, res) => {
 	const code = req.query.code;
 	if (code) {
-		console.log(code);
-		console.log('Creating connection');
 		const OAuth2Client = createConnection();
-		console.log('Connection created');
 		const { tokens } = await OAuth2Client.getToken(code);
-		console.log('Got tokens');
 		OAuth2Client.setCredentials(tokens);
-		console.log('Set credentials');
 		google
 			.oauth2('v2')
 			.userinfo.v2.me.get(
@@ -64,28 +59,37 @@ app.get('/oauthcallback', async (req, res) => {
 						if (!attendanceOpen) {
 							res.redirect('/?success=false');
 						} else {
-							console.log('Looking for user in database');
 							const userExists = await users.findOne({
 								name: profile.data.name,
 							});
 							if (userExists) {
 								// Log user
-								console.log('Updating user');
-								let updated = await users.update(userExists, {
-									$set: { attended: true },
-								});
-								console.log('Updated user in database');
-								if (updated) res.redirect('/?success=true');
-								else res.redirect('/?success=false');
+								users
+									.update(userExists, {
+										$set: { attended: true },
+									})
+									.then((success) => {
+										res.redirect('/?success=true');
+									})
+									.catch((err) => {
+										console.log(err);
+										res.redirect('/?success=true');
+									});
 							} else {
 								// Create user
-								let updated = await users.insert({
-									name: profile.data.name,
-									email: profile.data.email,
-									attended: true,
-								});
-								if (updated) res.redirect('/success=true');
-								else res.redirect('/?success=false');
+								users
+									.insert({
+										name: profile.data.name,
+										email: profile.data.email,
+										attended: true,
+									})
+									.then((success) => {
+										res.redirect('/?success=true');
+									})
+									.catch((err) => {
+										console.log(err);
+										res.redirect('/?success=true');
+									});
 							}
 						}
 					}
