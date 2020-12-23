@@ -64,18 +64,6 @@ app.get('/oauthcallback', async (req, res) => {
 							});
 							if (userExists) {
 								// Log user
-<<<<<<< HEAD
-								await users.update(userExists, {
-									$set: { attended: true },
-								});
-							} else {
-								// Create user
-								await users.insert({
-									name: profile.data.name,
-									email: profile.data.email,
-									attended: true,
-								});
-=======
 								users
 									.update(userExists, {
 										$set: { attended: true },
@@ -102,7 +90,6 @@ app.get('/oauthcallback', async (req, res) => {
 										console.log(err);
 										res.redirect('/?success=true');
 									});
->>>>>>> ade416a... Removed debug logs and added promise handling when writing to database
 							}
 							res.redirect('/?success=true');
 						}
