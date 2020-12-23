@@ -26,6 +26,7 @@ const db = monk(process.env.MONGODB_URL);
 const users = db.get('users');
 
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
 
 // Express middleware to detect if user has logged in with google
 const googleLoginReader = async (req, res, next) => {
@@ -34,20 +35,22 @@ const googleLoginReader = async (req, res, next) => {
 		const OAuth2Client = createConnection();
 		const { tokens } = await OAuth2Client.getToken(code);
 		OAuth2Client.setCredentials(tokens);
-		google.oauth2('v2').userinfo.v2.me.get({ auth: OAuth2Client }, (err, profile) => {
-			if (err) {
-				console.log(err);
-			} else {
-				console.log(profile.data);
-				// Log user in database
-				// Each user will have 3 fields:
-				// 1. User name
-				// 2. User email
-				// 3. Attended
-				// The admin can set everybody's attended to false each new meeting
-				// Admin can also close and open attendance
-			}
-		});
+		google
+			.oauth2('v2')
+			.userinfo.v2.me.get({ auth: OAuth2Client }, (err, profile) => {
+				if (err) {
+					console.log(err);
+				} else {
+					console.log(profile.data);
+					// Log user in database
+					// Each user will have 3 fields:
+					// 1. User name
+					// 2. User email
+					// 3. Attended
+					// The admin can set everybody's attended to false each new meeting
+					// Admin can also close and open attendance
+				}
+			});
 	}
 	next();
 };
@@ -58,6 +61,43 @@ app.use(express.static('client/dist'));
 app.get('/login', (req, res) => {
 	// Redirect to generated google url
 	res.redirect(process.env.GOOGLE_OAUTH_URL);
+});
+
+app.get('/*', (req, res) => {
+	res.redirect('/');
+});
+
+app.post('/login', (req, res) => {
+	if (req.body.password == process.env.ADMIN_PASSWORD) {
+		res.json({
+			success: true,
+		});
+	} else {
+		res.json({
+			success: false,
+			errorMsg: 'Error: Incorrect password',
+		});
+	}
+});
+
+app.post('/api/getuserdata', (req, res) => {
+	if (req.body.password != process.env.ADMIN_PASSWORD) {
+		res.json({
+			success: false,
+			errorMsg: 'Error: Incorrect password',
+		});
+	}
+	// Get user data from database
+	res.json({
+		success: true,
+		userList: [
+			{
+				name: 'Callum Irving',
+				email: 'irvic5144@wrdsb.ca',
+				attended: false,
+			},
+		],
+	});
 });
 
 app.listen(port, () => {
