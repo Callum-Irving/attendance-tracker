@@ -6,6 +6,7 @@ const routes = [
 		path: '/',
 		name: 'Home',
 		component: Home,
+		props: (route) => ({ success: route.query.success }),
 	},
 	{
 		path: '/admin',

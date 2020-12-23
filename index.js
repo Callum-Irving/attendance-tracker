@@ -1,11 +1,10 @@
+const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const monk = require('monk');
 const { google } = require('googleapis');
 const dotenv = require('dotenv');
 dotenv.config();
-
-let attendanceOpen = true;
 
 function createConnection() {
 	return new google.auth.OAuth2(
@@ -16,20 +15,30 @@ function createConnection() {
 }
 
 // Code to generate the google oauth2 url:
-// const googleUrl = oauth2Client.generateAuthUrl({
+// const googleUrl = OAuth2Client.generateAuthUrl({
 // scope: 'https://www.googleapis.com/auth/userinfo.email',
 // });
+// console.log(googleUrl);
+// res.redirect(googleUrl);
 
 const app = express();
 const port = process.env.PORT || 5000;
 const db = monk(process.env.MONGODB_URL);
 const users = db.get('users');
 
+let attendanceOpen = false;
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.json());
 
-// Express middleware to detect if user has logged in with google
-const googleLoginReader = async (req, res, next) => {
+app.use(express.static('client/dist'));
+
+app.get('/login', (req, res) => {
+	// Redirect to generated google url
+	res.redirect(process.env.GOOGLE_OAUTH_URL);
+});
+
+app.get('/oauthcallback', async (req, res) => {
 	const code = req.query.code;
 	if (code) {
 		const OAuth2Client = createConnection();
@@ -37,30 +46,36 @@ const googleLoginReader = async (req, res, next) => {
 		OAuth2Client.setCredentials(tokens);
 		google
 			.oauth2('v2')
-			.userinfo.v2.me.get({ auth: OAuth2Client }, (err, profile) => {
-				if (err) {
-					console.log(err);
-				} else {
-					console.log(profile.data);
-					// Log user in database
-					// Each user will have 3 fields:
-					// 1. User name
-					// 2. User email
-					// 3. Attended
-					// The admin can set everybody's attended to false each new meeting
-					// Admin can also close and open attendance
+			.userinfo.v2.me.get(
+				{ auth: OAuth2Client },
+				async (err, profile) => {
+					if (err) {
+						res.redirect('/?success=false');
+					} else {
+						if (!attendanceOpen) {
+							res.redirect('/?success=false');
+						}
+						const userExists = await users.findOne({
+							name: profile.data.name,
+						});
+						if (userExists) {
+							// Log user
+							users.update(userExists, { attended: true });
+						} else {
+							// Create user
+							users.insert({
+								name: profile.data.name,
+								email: profile.data.email,
+								attended: true,
+							});
+						}
+					}
 				}
-			});
+			);
+	} else {
+		res.redirect('/?success=false');
 	}
-	next();
-};
-
-app.use(googleLoginReader);
-app.use(express.static('client/dist'));
-
-app.get('/login', (req, res) => {
-	// Redirect to generated google url
-	res.redirect(process.env.GOOGLE_OAUTH_URL);
+	res.redirect('/?success=true');
 });
 
 app.get('/*', (req, res) => {
