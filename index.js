@@ -3,8 +3,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const monk = require('monk');
 const { google } = require('googleapis');
-const dotenv = require('dotenv');
-dotenv.config();
+// const dotenv = require('dotenv');
+// dotenv.config();
 
 function createConnection() {
 	return new google.auth.OAuth2(
