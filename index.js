@@ -91,7 +91,6 @@ app.get('/oauthcallback', async (req, res) => {
 										res.redirect('/?success=true');
 									});
 							}
-							res.redirect('/?success=true');
 						}
 					}
 				}
