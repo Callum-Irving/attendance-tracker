@@ -10,7 +10,9 @@
 	"dependencies": {
 		"core-js": "^3.6.5",
 		"vue": "^3.0.0",
-		"vue-router": "^4.0.0-0",
+		"vue-router": "^4.0.0-0"
+	},
+	"devDependencies": {
 		"@vue/cli-service": "~4.5.0",
 		"@vue/cli-plugin-babel": "~4.5.0",
 		"@vue/cli-plugin-eslint": "~4.5.0",
@@ -23,7 +25,6 @@
 		"eslint-plugin-vue": "^7.0.0-0",
 		"prettier": "^1.19.1"
 	},
-	"devDependencies": {},
 	"eslintConfig": {
 		"root": true,
 		"env": {
