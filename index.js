@@ -45,6 +45,7 @@ app.get('/login', (req, res) => {
 app.get('/oauthcallback', async (req, res) => {
 	const code = req.query.code;
 	if (code) {
+		console.log(code);
 		console.log('Creating connection');
 		const OAuth2Client = createConnection();
 		console.log('Connection created');
