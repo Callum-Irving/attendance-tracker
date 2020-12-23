@@ -13,9 +13,9 @@ function createConnection() {
 		process.env.GOOGLE_REDIRECT_URL
 	);
 }
-
+// const oauth = createConnection();
 // Code to generate the google oauth2 url:
-// const googleUrl = OAuth2Client.generateAuthUrl({
+// const googleUrl = oauth.generateAuthUrl({
 // scope: 'https://www.googleapis.com/auth/userinfo.email',
 // });
 // console.log(googleUrl);
