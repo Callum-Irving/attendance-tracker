@@ -71,18 +71,22 @@ app.get('/oauthcallback', async (req, res) => {
 							if (userExists) {
 								// Log user
 								console.log('Updating user');
-								await users.update(userExists, {
+								let updated = await users.update(userExists, {
 									$set: { attended: true },
 								});
+								console.log('Updated user in database');
+								if (updated) res.redirect('/?success=true');
+								else res.redirect('/?success=false');
 							} else {
 								// Create user
-								await users.insert({
+								let updated = await users.insert({
 									name: profile.data.name,
 									email: profile.data.email,
 									attended: true,
 								});
+								if (updated) res.redirect('/success=true');
+								else res.redirect('/?success=false');
 							}
-							res.redirect('/?success=true');
 						}
 					}
 				}
