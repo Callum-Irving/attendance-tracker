@@ -6,7 +6,7 @@
   </form>
   <p>{{ msg }}</p>
   <div v-if="loggedIn">
-    <p>{{attendanceOpen}}</p>
+    <p>Attendance is {{attendanceOpen ? "open": "closed" }}</p>
     <table>
       <tr>
         <th>Name</th>
@@ -114,3 +114,19 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+table,
+tr,
+th {
+  border: 1px solid black;
+  padding: 10px;
+  color: black;
+}
+
+table {
+  margin: 0 auto;
+  margin-bottom: 10px;
+  border-collapse: collapse;
+}
+</style>
