@@ -5,19 +5,24 @@
     <button type="submit">Login</button>
   </form>
   <p>{{ msg }}</p>
-  <table v-if="loggedIn">
-    <tr>
-      <th>Name</th>
-      <th>Email</th>
-      <th>Attended</th>
-    </tr>
-    <tr v-for="user in userList" :key="user.name">
-      <th>{{ user.name }}</th>
-      <th>{{ user.email }}</th>
-      <th>{{ user.attended }}</th>
-    </tr>
-  </table>
-  <button id="refresh" @click="getUserData">Refresh</button>
+  <div v-if="loggedIn">
+    <p>{{attendanceOpen}}</p>
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Attended</th>
+      </tr>
+      <tr v-for="user in userList" :key="user.name">
+        <th>{{ user.name }}</th>
+        <th>{{ user.email }}</th>
+        <th>{{ user.attended }}</th>
+      </tr>
+    </table>
+    <button id="refresh" @click="getUserData">Refresh</button>
+    <button id="toggleOpen" @click="toggleAttendanceOpen">Toggle attendance open</button>
+    <button id="resetAttendance" @click="resetUserAttendance">Reset user attendance</button>
+  </div>
 </template>
 
 <script>
@@ -28,7 +33,8 @@ export default {
       password: "",
       msg: "",
       loggedIn: false,
-      userList: []
+      userList: [],
+      attendanceOpen: null
     };
   },
   methods: {
@@ -65,7 +71,42 @@ export default {
       });
       const usableResult = await result.json();
       if (usableResult.success) {
+        this.attendanceOpen = usableResult.attendanceOpen;
         this.userList = usableResult.userList;
+      } else {
+        this.msg = usableResult.errorMsg;
+      }
+    },
+    async toggleAttendanceOpen() {
+      const result = await fetch("api/openattendance", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          password: this.password
+        })
+      });
+      const usableResult = await result.json();
+      if (usableResult.success) {
+        this.getUserData();
+      } else {
+        this.msg = usableResult.errorMsg;
+      }
+    },
+    async resetUserAttendance() {
+      const result = await fetch("api/resetuserattendance", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          password: this.password
+        })
+      });
+      const usableResult = await result.json();
+      if (usableResult.success) {
+        this.getUserData();
       } else {
         this.msg = usableResult.errorMsg;
       }

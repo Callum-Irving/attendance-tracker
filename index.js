@@ -35,7 +35,11 @@ app.use(express.static('client/dist'));
 
 app.get('/login', (req, res) => {
 	// Redirect to generated google url
-	res.redirect(process.env.GOOGLE_OAUTH_URL);
+	if (attendanceOpen) {
+		res.redirect(process.env.GOOGLE_OAUTH_URL);
+	} else {
+		res.redirect('/?success=false');
+	}
 });
 
 app.get('/oauthcallback', async (req, res) => {
@@ -54,20 +58,24 @@ app.get('/oauthcallback', async (req, res) => {
 					} else {
 						if (!attendanceOpen) {
 							res.redirect('/?success=false');
-						}
-						const userExists = await users.findOne({
-							name: profile.data.name,
-						});
-						if (userExists) {
-							// Log user
-							users.update(userExists, { attended: true });
 						} else {
-							// Create user
-							users.insert({
+							const userExists = await users.findOne({
 								name: profile.data.name,
-								email: profile.data.email,
-								attended: true,
 							});
+							if (userExists) {
+								// Log user
+								await users.update(userExists, {
+									$set: { attended: true },
+								});
+							} else {
+								// Create user
+								await users.insert({
+									name: profile.data.name,
+									email: profile.data.email,
+									attended: true,
+								});
+							}
+							res.redirect('/?success=true');
 						}
 					}
 				}
@@ -75,7 +83,6 @@ app.get('/oauthcallback', async (req, res) => {
 	} else {
 		res.redirect('/?success=false');
 	}
-	res.redirect('/?success=true');
 });
 
 app.get('/*', (req, res) => {
@@ -105,6 +112,7 @@ app.post('/api/getuserdata', (req, res) => {
 	// Get user data from database
 	res.json({
 		success: true,
+		attendanceOpen: attendanceOpen,
 		userList: [
 			{
 				name: 'Callum Irving',
@@ -113,6 +121,27 @@ app.post('/api/getuserdata', (req, res) => {
 			},
 		],
 	});
+});
+
+app.post('/api/openattendance', (req, res) => {
+	if (req.body.password != process.env.ADMIN_PASSWORD) {
+		res.json({ success: false, errorMsg: 'Error: Incorrect password' });
+	} else {
+		attendanceOpen = !attendanceOpen;
+		res.json({ success: true });
+	}
+});
+
+app.post('/api/resetuserattendance', async (req, res) => {
+	if (req.body.password != process.env.ADMIN_PASSWORD) {
+		res.json({ success: false, errorMsg: 'Error: Incorrect password' });
+	} else {
+		const allUsers = await users.find();
+		allUsers.forEach(async (user) => {
+			users.update(user, { $set: { attended: false } });
+		});
+		res.json({ success: true });
+	}
 });
 
 app.listen(port, () => {
