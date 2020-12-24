@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <a class="login-button" href="/login">Check in with Google</a>
-    <p v-if="msg">{{ msg }}</p>
+    <p class="message" v-bind:class="success ? 'success' : 'failure'" v-if="msg">{{ msg }}</p>
   </div>
 </template>
 
@@ -9,12 +9,11 @@
 export default {
   name: "Home",
   props: {
-    success: null,
-    errorMsg: null,
     oauthCode: null
   },
   data() {
     return {
+      success: null,
       msg: ""
     };
   },
@@ -38,10 +37,13 @@ export default {
 
       if (usable.success === true) {
         this.msg = "Success! You have been tracked!";
+        this.success = usable.success;
       } else if (usable.success === false) {
         this.msg = usable.errorMsg;
+        this.success = usable.success;
       } else {
         this.msg = "An unknown error occured.";
+        this.success = false;
       }
     }
   }
@@ -53,6 +55,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   position: absolute;
   left: 50%;
   top: 50%;
@@ -70,5 +73,33 @@ export default {
 
 .login-button:hover {
   background: #389c6f;
+}
+
+.message {
+  padding: 10px;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+  border: none;
+  animation: fadeIn ease 1s;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translate(0, -50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
+.success {
+  background: green;
+}
+
+.failure {
+  background: red;
 }
 </style>
