@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <a class="button is-danger" href="/login">Check in with Google</a>
+    <a class="login-button" href="/login">Check in with Google</a>
     <p v-if="msg">{{ msg }}</p>
   </div>
 </template>
@@ -51,7 +51,24 @@ export default {
 <style scoped>
 .home {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.login-button {
+  text-decoration: none;
+  font-weight: bold;
+  padding: 10px;
+  background: #42b983;
+  color: white;
+  border-radius: 5px;
+}
+
+.login-button:hover {
+  background: #389c6f;
 }
 </style>

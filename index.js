@@ -75,7 +75,7 @@ app.get(
 			name: userProfile.name,
 		});
 		if (existingUser) {
-			if (existingUser.attended == true) {
+			if (existingUser.attended === true) {
 				return res.json({
 					success: false,
 					errorMsg: 'You have already been logged.',
@@ -107,12 +107,13 @@ app.get(
 	}
 );
 
+// Redirect everything to '/' to work with vue router
 app.get('/*', (req, res) => {
 	res.redirect('/');
 });
 
 app.post('/login', (req, res) => {
-	if (req.body.password == process.env.ADMIN_PASSWORD) {
+	if (req.body.password === process.env.ADMIN_PASSWORD) {
 		res.json({
 			success: true,
 		});
