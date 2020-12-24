@@ -1,5 +1,6 @@
 const path = require('path');
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -23,6 +24,7 @@ const user = mongoose.model('user', {
 	attended: Boolean,
 });
 
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -56,30 +58,34 @@ passport.use(
 	)
 );
 
-const attendanceOpenCheck = (req, res, next) => {
-	if (!attendanceOpen) return res.redirect('/?success=false');
-	next();
-};
-app.get(
-	'/login',
-	attendanceOpenCheck,
-	passport.authenticate('google', { scope: 'email' })
-);
+app.get('/login', passport.authenticate('google', { scope: 'email' }));
 
 app.get(
 	'/oauthcallback',
 	passport.authenticate('google', { failureRedirect: '/error' }),
 	async (req, res) => {
+		if (!attendanceOpen) {
+			return res.json({
+				success: false,
+				errorMsg: 'Attendance is not open.',
+			});
+		}
 		const userProfile = req.user._json;
 		const existingUser = await user.findOne({
 			name: userProfile.name,
 		});
 		if (existingUser) {
+			if (existingUser.attended == true) {
+				return res.json({
+					success: false,
+					errorMsg: 'You have already been logged.',
+				});
+			}
 			// Log user
 			await user.updateOne(existingUser, {
 				attended: true,
 			});
-			return res.redirect('/?success=true');
+			return res.json({ success: true });
 		} else {
 			// Create user
 			const newUser = new user({
@@ -90,9 +96,12 @@ app.get(
 			newUser.save((err, success) => {
 				if (err) {
 					console.error(err);
-					return res.redirect('/?success=false');
+					return res.json({
+						success: false,
+						errorMsg: 'Error saving new user to database.',
+					});
 				}
-				return res.redirect('/?success=true');
+				return res.json({ success: true });
 			});
 		}
 	}

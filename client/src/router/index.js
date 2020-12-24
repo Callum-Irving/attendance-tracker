@@ -6,12 +6,22 @@ const routes = [
 		path: '/',
 		name: 'Home',
 		component: Home,
-		props: (route) => ({ success: route.query.success }),
+		props: (route) => ({
+			oauthCode: route.query.code,
+			success: route.query.success,
+			errorMsg: route.query.errorMsg,
+		}),
 	},
 	{
 		path: '/admin',
 		name: 'Admin',
 		component: () => import('../views/Admin.vue'),
+	},
+	{
+		path: '/error',
+		name: 'Error',
+		component: () => import('../views/Error.vue'),
+		props: true,
 	},
 ];
 
