@@ -1,5 +1,6 @@
 const path = require('path');
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 // const dotenv = require('dotenv');
@@ -23,12 +24,13 @@ const user = mongoose.model('user', {
 	attended: Boolean,
 });
 
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.use(express.static('client/dist'));
 
-// Google OAuth
+// Passport js configuration for logging in with google
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
@@ -56,30 +58,34 @@ passport.use(
 	)
 );
 
-const attendanceOpenCheck = (req, res, next) => {
-	if (!attendanceOpen) return res.redirect('/?success=false');
-	next();
-};
-app.get(
-	'/login',
-	attendanceOpenCheck,
-	passport.authenticate('google', { scope: 'email' })
-);
+app.get('/login', passport.authenticate('google', { scope: 'email' }));
 
 app.get(
-	'/oauthcallback',
-	passport.authenticate('google', { failureRedirect: '/error' }),
+	'/api/verifyoauth',
+	passport.authenticate('google'),
 	async (req, res) => {
+		if (!attendanceOpen) {
+			return res.json({
+				success: false,
+				errorMsg: 'Attendance is not open.',
+			});
+		}
 		const userProfile = req.user._json;
 		const existingUser = await user.findOne({
 			name: userProfile.name,
 		});
 		if (existingUser) {
+			if (existingUser.attended === true) {
+				return res.json({
+					success: false,
+					errorMsg: 'You have already been logged.',
+				});
+			}
 			// Log user
 			await user.updateOne(existingUser, {
 				attended: true,
 			});
-			return res.redirect('/?success=true');
+			return res.json({ success: true });
 		} else {
 			// Create user
 			const newUser = new user({
@@ -90,20 +96,24 @@ app.get(
 			newUser.save((err, success) => {
 				if (err) {
 					console.error(err);
-					return res.redirect('/?success=false');
+					return res.json({
+						success: false,
+						errorMsg: 'Error saving new user to database.',
+					});
 				}
-				return res.redirect('/?success=true');
+				return res.json({ success: true });
 			});
 		}
 	}
 );
 
+// Redirect everything to '/' to work with vue router
 app.get('/*', (req, res) => {
 	res.redirect('/');
 });
 
 app.post('/login', (req, res) => {
-	if (req.body.password == process.env.ADMIN_PASSWORD) {
+	if (req.body.password === process.env.ADMIN_PASSWORD) {
 		res.json({
 			success: true,
 		});

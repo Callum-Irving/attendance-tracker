@@ -6,7 +6,9 @@ const routes = [
 		path: '/',
 		name: 'Home',
 		component: Home,
-		props: (route) => ({ success: route.query.success }),
+		props: (route) => ({
+			oauthCode: route.query.code,
+		}),
 	},
 	{
 		path: '/admin',

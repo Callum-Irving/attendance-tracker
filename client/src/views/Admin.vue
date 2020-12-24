@@ -2,11 +2,11 @@
   <h1>Admin Page</h1>
   <form v-if="!loggedIn" @submit.prevent="tryLogin">
     <input placeholder="Admin password" type="password" v-model="password" />
-    <button type="submit">Login</button>
+    <button class="button" type="submit">Login</button>
   </form>
-  <p>{{ msg }}</p>
+  <p v-if="msg">{{ msg }}</p>
   <div v-if="loggedIn">
-    <p>Attendance is {{attendanceOpen ? "open": "closed" }}</p>
+    <p>Attendance is {{ attendanceOpen ? "open" : "closed" }}</p>
     <table>
       <tr>
         <th>Name</th>
@@ -19,9 +19,10 @@
         <th>{{ user.attended }}</th>
       </tr>
     </table>
-    <button id="refresh" @click="getUserData">Refresh</button>
-    <button id="toggleOpen" @click="toggleAttendanceOpen">Toggle attendance open</button>
-    <button id="resetAttendance" @click="resetUserAttendance">Reset user attendance</button>
+
+    <button class="button" @click="getUserData">Refresh</button>
+    <button class="button" @click="toggleAttendanceOpen">Toggle attendance open</button>
+    <button class="button" @click="resetUserAttendance">Reset user attendance</button>
   </div>
 </template>
 
@@ -53,7 +54,6 @@ export default {
       const usableResult = await result.json();
       this.loggedIn = usableResult.success;
       if (usableResult.success) {
-        this.msg = "Login successful";
         this.getUserData();
       } else {
         this.msg = usableResult.errorMsg;
@@ -128,5 +128,26 @@ table {
   margin: 0 auto;
   margin-bottom: 10px;
   border-collapse: collapse;
+}
+
+.button {
+  cursor: pointer;
+  border: none;
+  margin: 10px;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 10px;
+  background: #42b983;
+  color: white;
+  border-radius: 5px;
+}
+
+.button:hover {
+  background: #389c6f;
+}
+
+.button:focus {
+  border: none;
+  outline: none;
 }
 </style>
