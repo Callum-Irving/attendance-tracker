@@ -17,12 +17,6 @@ const routes = [
 		name: 'Admin',
 		component: () => import('../views/Admin.vue'),
 	},
-	{
-		path: '/error',
-		name: 'Error',
-		component: () => import('../views/Error.vue'),
-		props: true,
-	},
 ];
 
 const router = createRouter({

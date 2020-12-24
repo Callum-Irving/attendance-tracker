@@ -30,7 +30,7 @@ app.use(express.json());
 
 app.use(express.static('client/dist'));
 
-// Google OAuth
+// Passport js configuration for logging in with google
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
@@ -61,8 +61,8 @@ passport.use(
 app.get('/login', passport.authenticate('google', { scope: 'email' }));
 
 app.get(
-	'/oauthcallback',
-	passport.authenticate('google', { failureRedirect: '/error' }),
+	'/api/verifyoauth',
+	passport.authenticate('google'),
 	async (req, res) => {
 		if (!attendanceOpen) {
 			return res.json({
